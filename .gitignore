@@ -1,0 +1,44 @@
+# Python / Django
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.sqlite3-journal
+db.sqlite3
+.venv/
+venv/
+env/
+*.egg-info/
+staticfiles/
+media/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node / Vite
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Editors / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# Logs
+*.log
+logs/
