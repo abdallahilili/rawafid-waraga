@@ -1,13 +1,13 @@
+import { useEntreprise } from "../../hooks/useEntreprise";
 import { useEffect, useState } from "react";
-import { Plus, X, FileText } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { useListe, useOptions } from "../../hooks/useListe";
 import { TableauDonnees } from "../../composants/TableauDonnees";
 import { Modale } from "../../composants/Modale";
-import { Badge } from "../../composants/Badge";
+import { Badge, libelleStatut } from "../../composants/Badge";
 import { useNotifications } from "../../composants/Notifications";
 import { api, messageErreur } from "../../services/api";
 import { useAuth } from "../../hooks/useAuth";
-import { imprimerBonLivraison } from "../../services/bonLivraison";
 import type { CommandeImpression, Depot, TypeTravail, FormatPapier, Couleur } from "../../types";
 
 const CHOIX_TRAVAIL: { value: TypeTravail; label: string }[] = [
@@ -37,6 +37,7 @@ const TRANSITIONS: Record<string, string[]> = {
 };
 
 export function PageCommandesImpression() {
+  const { devise } = useEntreprise();
   const { utilisateur, autorise } = useAuth();
   const { resultats, chargement, page, setPage, nombrePages, recharger } = useListe<CommandeImpression>("/impression/commandes/");
   const depots = useOptions<Depot>("/depots/");
@@ -89,14 +90,6 @@ export function PageCommandesImpression() {
     }
   }
 
-  async function bonLivraison(commande: CommandeImpression) {
-    try {
-      await imprimerBonLivraison(commande);
-    } catch (err) {
-      notifierErreur(messageErreur(err));
-    }
-  }
-
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
@@ -109,12 +102,13 @@ export function PageCommandesImpression() {
       </div>
 
       <TableauDonnees<CommandeImpression>
+        titre="Commandes d'impression"
         colonnes={[
           { cle: "reference", titre: "Reference" },
           { cle: "nom_client", titre: "Client" },
           { cle: "depot_nom", titre: "Depot" },
-          { cle: "montant_total", titre: "Montant", alignerDroite: true, rendu: (c) => `${c.montant_total} MRU` },
-          { cle: "statut", titre: "Statut", rendu: (c) => <Badge statut={c.statut} /> },
+          { cle: "montant_total", titre: "Montant", alignerDroite: true, rendu: (c) => `${c.montant_total} ${devise}` },
+          { cle: "statut", titre: "Statut", rendu: (c) => <Badge statut={c.statut} />, exportRendu: (c) => libelleStatut(c.statut) },
         ]}
         lignes={resultats}
         chargement={chargement}
@@ -124,11 +118,6 @@ export function PageCommandesImpression() {
         onChangerPage={setPage}
         actions={(c) => (
           <div className="flex justify-end gap-2">
-            {autorise("impression.bon_livraison") && c.statut !== "ANNULEE" && (
-              <button onClick={() => bonLivraison(c)} className="flex items-center gap-1 rounded border border-bordure px-2 py-0.5 text-xs hover:bg-fond" title="Imprimer le bon de livraison">
-                <FileText size={13} /> Bon de livraison
-              </button>
-            )}
             {autorise("impression.changer_statut") && TRANSITIONS[c.statut]?.map((s) => (
               <button key={s} onClick={() => changerStatut(c, s)} className="rounded border border-bordure px-2 py-0.5 text-xs hover:bg-fond">
                 <Badge statut={s} />

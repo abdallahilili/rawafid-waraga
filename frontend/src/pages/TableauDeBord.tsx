@@ -1,3 +1,4 @@
+import { useEntreprise } from "../hooks/useEntreprise";
 import { useEffect, useState } from "react";
 import { Truck, Clock, PackageCheck, ShoppingCart, AlertTriangle, DollarSign } from "lucide-react";
 import { api } from "../services/api";
@@ -5,11 +6,9 @@ import type { TableauDeBord } from "../types";
 import { CarteKpi } from "../composants/CarteKpi";
 import { CarteGraphiqueBarres, CarteGraphiqueLigne } from "../composants/Graphiques";
 
-function formaterMontant(valeur: string) {
-  return `${Number(valeur).toLocaleString("fr-FR")} MRU`;
-}
-
 export function PageTableauDeBord() {
+  const { devise } = useEntreprise();
+  const formaterMontant = (valeur: string) => `${Number(valeur).toLocaleString("fr-FR")} ${devise}`;
   const [donnees, setDonnees] = useState<TableauDeBord | null>(null);
 
   useEffect(() => {
@@ -45,8 +44,8 @@ export function PageTableauDeBord() {
       <h2 className="mb-2 text-sm font-semibold text-texte-attenue">Planification</h2>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <CarteGraphiqueBarres titre="Taux de livraison a temps (%)" categories={graphiques.mois} valeurs={graphiques.taux_livraison_par_mois} suffixe="%" />
-        <CarteGraphiqueLigne titre="Ventes par mois (MRU)" categories={graphiques.mois} valeurs={graphiques.ventes_par_mois} />
-        <CarteGraphiqueLigne titre="Achats par mois (MRU)" categories={graphiques.mois} valeurs={graphiques.achats_par_mois} />
+        <CarteGraphiqueLigne titre={`Ventes par mois (${devise})`} categories={graphiques.mois} valeurs={graphiques.ventes_par_mois} />
+        <CarteGraphiqueLigne titre={`Achats par mois (${devise})`} categories={graphiques.mois} valeurs={graphiques.achats_par_mois} />
       </div>
     </div>
   );

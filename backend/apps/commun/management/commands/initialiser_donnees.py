@@ -4,6 +4,7 @@ from django.db import transaction
 from apps.depots.models import Depot
 from apps.utilisateurs.models import Utilisateur, Groupe, Fonction, Fonctionnalite, FonctionnaliteGroupe
 from apps.utilisateurs.groupes import creer_groupes_par_defaut
+from apps.commun.constantes import PARAMETRES_PAR_DEFAUT
 from apps.commun.models import Parametre
 
 
@@ -34,11 +35,7 @@ class Command(BaseCommand):
                 f"Utilisateur admin cree (identifiant=admin / mot de passe=admin123)"
             ))
 
-        Parametre.objects.get_or_create(
-            cle="AUTORISER_STOCK_NEGATIF", defaults={"valeur": "0", "description": "1 pour autoriser un stock negatif"}
-        )
-        Parametre.objects.get_or_create(
-            cle="NOM_ENTREPRISE", defaults={"valeur": "Papeterie & Imprimerie", "description": "Nom affiche sur les recus"}
-        )
+        for cle, (valeur, description) in PARAMETRES_PAR_DEFAUT.items():
+            Parametre.objects.get_or_create(cle=cle, defaults={"valeur": valeur, "description": description})
 
         self.stdout.write(self.style.SUCCESS("Initialisation terminee."))

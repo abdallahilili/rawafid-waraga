@@ -104,3 +104,94 @@ class TestVentes(CasDeBase):
             "lignes": [{"type": "ARTICLE", "article": self.article.id, "quantite": 1}],
         }, format="json")
         self.assertEqual(reponse.status_code, 400)
+
+
+class TestVenteService(CasDeBase):
+    def setUp(self):
+        super().setUp()
+        from apps.impression.models import TarifImpression
+        self.tarif = TarifImpression.objects.create(
+            depot=self.depot, type_travail="PHOTOCOPIE", format_papier="A4",
+            couleur="NOIR_BLANC", prix_unitaire_page=Decimal("5"),
+        )
+        self.session = caisse_services.ouvrir_session(self.depot, self.caissier)
+
+    def test_vente_d_un_service_au_comptoir(self):
+        client = self.client_pour(self.caissier)
+        reponse = client.post("/api/ventes/", {
+            "depot": self.depot.id, "montant_recu": "100",
+            "lignes": [{"type": "SERVICE", "tarif": self.tarif.id, "quantite": 12}],
+        }, format="json")
+        self.assertEqual(reponse.status_code, 201, reponse.data)
+        self.assertEqual(reponse.data["montant_total"], "60.00")
+        ligne = reponse.data["lignes"][0]
+        self.assertEqual(ligne["designation"], "Photocopie A4 Noir et blanc")
+        self.assertEqual(ligne["quantite"], 12)
+
+    def test_tarif_inactif_refuse(self):
+        self.tarif.actif = False
+        self.tarif.save()
+        reponse = self.client_pour(self.caissier).post("/api/ventes/", {
+            "depot": self.depot.id, "montant_recu": "100",
+            "lignes": [{"type": "SERVICE", "tarif": self.tarif.id, "quantite": 1}],
+        }, format="json")
+        self.assertEqual(reponse.status_code, 400)
+
+
+class TestPaiementsMultiples(CasDeBase):
+    def setUp(self):
+        super().setUp()
+        from apps.facturation.models import ModePaiement
+        self.especes, _ = ModePaiement.objects.update_or_create(nom="Especes", defaults={"especes": True, "etat": True})
+        self.mobile, _ = ModePaiement.objects.update_or_create(nom="Mobile test", defaults={"especes": False, "etat": True})
+        self.article = Article.objects.create(nom="Classeur", reference="ART-PM", prix_achat=50, prix_vente=100)
+        stock_services.enregistrer_entree(self.article, self.depot, 50, Decimal("50"))
+        self.session = caisse_services.ouvrir_session(self.depot, self.caissier, 0)
+        self.lignes = [{"type": TypeLigneVente.ARTICLE, "article": self.article, "quantite": 3}]  # 300
+
+    def test_paiement_partage_entre_deux_modes_avec_rendu(self):
+        vente = vente_services.creer_vente(
+            self.depot, self.session, self.lignes, 150, utilisateur=self.caissier,
+            paiements=[
+                {"mode_paiement": self.especes, "montant": Decimal("120")},
+                {"mode_paiement": self.mobile, "montant": Decimal("180"), "reference_transaction": "TX1"},
+            ],
+        )
+        self.assertEqual(vente.paiements.count(), 2)
+        self.assertEqual(vente.monnaie_rendue, Decimal("30"))      # 150 remis pour 120 en especes
+        self.assertEqual(vente.montant_recu, Decimal("330"))       # 150 + 180
+        resume = caisse_services.calculer_resume(self.session)
+        self.assertEqual(resume["total_especes"], Decimal("120"))
+        self.assertEqual(resume["total_autres_paiements"], Decimal("180"))
+
+    def test_montant_remis_facultatif_et_somme_obligatoire(self):
+        vente = vente_services.creer_vente(
+            self.depot, self.session, self.lignes, None,
+            paiements=[{"mode_paiement": self.mobile, "montant": Decimal("300")}],
+        )
+        self.assertEqual(vente.monnaie_rendue, Decimal("0"))
+        with self.assertRaises(ErreurMetier):
+            vente_services.creer_vente(
+                self.depot, self.session, self.lignes, None,
+                paiements=[{"mode_paiement": self.especes, "montant": Decimal("250")}],
+            )
+
+    def test_api_vente_sans_montant_recu_ni_paiements_regle_en_especes(self):
+        reponse = self.client_pour(self.caissier).post("/api/ventes/", {
+            "depot": self.depot.id,
+            "lignes": [{"type": "ARTICLE", "article": self.article.id, "quantite": 1}],
+        }, format="json")
+        self.assertEqual(reponse.status_code, 201, reponse.data)
+        self.assertEqual(reponse.data["paiements"][0]["mode_paiement_nom"], "Especes")
+
+    def test_api_paiements_multiples(self):
+        reponse = self.client_pour(self.caissier).post("/api/ventes/", {
+            "depot": self.depot.id,
+            "lignes": [{"type": "ARTICLE", "article": self.article.id, "quantite": 2}],
+            "paiements": [
+                {"mode_paiement": self.especes.id, "montant": "50"},
+                {"mode_paiement": self.mobile.id, "montant": "150", "reference_transaction": "ABC"},
+            ],
+        }, format="json")
+        self.assertEqual(reponse.status_code, 201, reponse.data)
+        self.assertEqual(len(reponse.data["paiements"]), 2)

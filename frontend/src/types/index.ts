@@ -140,6 +140,9 @@ export interface TarifImpression {
   couleur: Couleur;
   prix_unitaire_page: string;
   actif: boolean;
+  libelle: string;
+  /** Nombre de fois ou ce travail a ete vendu au comptoir. */
+  frequence: number;
 }
 
 export interface LigneCommandeImpression {
@@ -172,9 +175,10 @@ export interface CommandeImpression {
 
 export interface LigneVente {
   id: number;
-  type_ligne: "ARTICLE" | "IMPRESSION";
+  type_ligne: "ARTICLE" | "IMPRESSION" | "SERVICE";
   article: number | null;
   article_nom: string | null;
+  designation: string;
   quantite: number | null;
   commande_impression: number | null;
   reference_commande_impression: string | null;
@@ -196,20 +200,60 @@ export interface Vente {
   annulee: boolean;
   date_vente: string;
   lignes: LigneVente[];
+  paiements: { id: number; mode_paiement: number; mode_paiement_nom: string; montant: string; reference_transaction: string }[];
 }
 
 export interface SessionCaissier {
   id: number;
   depot: number;
   depot_nom: string;
+  caisse: number | null;
+  caisse_nom: string;
   utilisateur: number;
   caissier_nom: string;
   statut: "OUVERTE" | "FERMEE";
   montant_ouverture: string;
   montant_fermeture: string | null;
+  montant_attendu: string | null;
+  ecart: string | null;
+  note: string;
   date_ouverture: string;
   date_fermeture: string | null;
+  fermee_par_nom: string;
   solde: string;
+  resume: ResumeSession;
+}
+
+export interface ResumeSession {
+  nombre_ventes: number;
+  total_ventes: string;
+  total_especes: string;
+  total_autres_paiements: string;
+  paiements_factures: string;
+  remboursements: string;
+  entrees_manuelles: string;
+  sorties_manuelles: string;
+  montant_attendu: string;
+}
+
+export interface MouvementCaisse {
+  id: number;
+  type_mouvement: string;
+  type_libelle: string;
+  montant: string;
+  mode_paiement_nom: string;
+  reference_document: string;
+  commentaire: string;
+  utilisateur_nom: string;
+  date_mouvement: string;
+}
+
+export interface Caisse {
+  id: number;
+  nom: string;
+  depot: number;
+  depot_nom: string;
+  etat: boolean;
 }
 
 export interface ListePaginee<T> {
@@ -237,4 +281,53 @@ export interface TableauDeBord {
     achats_par_mois: number[];
     taux_livraison_par_mois: number[];
   };
+}
+
+export interface Client {
+  id: number;
+  nom: string;
+  prenom: string;
+  num_client: string;
+  etat: boolean;
+}
+
+export interface ModePaiement {
+  id: number;
+  nom: string;
+  alias: string;
+  etat: boolean;
+  /** Paiement en especes : compte dans le tiroir-caisse. */
+  especes: boolean;
+}
+
+export interface LigneExpression {
+  id: number;
+  article: number | null;
+  tarif: number | null;
+  article_nom: string;
+  unite: string;
+  quantite_devis: number;
+  quantite_livre: number;
+  prix: string;
+  prix_total: string;
+}
+
+/** Devis (etat 0), bon de livraison (1) ou facture (2). */
+export interface ExpressionBesoins {
+  id: number;
+  reference: string;
+  client: number;
+  client_nom: string;
+  personnel_nom: string;
+  etat: 0 | 1 | 2;
+  etat_libelle: string;
+  etat_paiement: 0 | 1;
+  date_devis: string;
+  date_bc: string | null;
+  date_fc: string | null;
+  numero_bl: string;
+  numero_facture: string;
+  prix_total: string;
+  montant_reste: string;
+  lignes: LigneExpression[];
 }

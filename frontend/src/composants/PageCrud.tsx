@@ -181,6 +181,7 @@ export function PageCrud<T extends Record<string, any>>({
       </div>
 
       <TableauDonnees
+        titre={titre}
         colonnes={colonnes}
         lignes={resultats}
         chargement={chargement}

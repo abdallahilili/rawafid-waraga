@@ -1,3 +1,4 @@
+from django.db.models import Count, Q
 from rest_framework import viewsets, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -5,6 +6,7 @@ from rest_framework.views import APIView
 
 from apps.commun.permissions import PermissionParCode
 from apps.commun.vues_base import ViewSetGestion
+from apps.commun.constantes import StatutCommandeImpression
 from apps.depots.models import Depot
 from .models import TarifImpression, CommandeImpression
 from .serializers import (
@@ -17,15 +19,19 @@ from . import services
 class TarifImpressionViewSet(ViewSetGestion):
     queryset = TarifImpression.objects.select_related("depot").all()
     serializer_class = TarifImpressionSerializer
-    permission_lecture = ["tarifs_impression.voir", "impression.creer"]
+    permission_lecture = ["tarifs_impression.voir", "impression.creer", "ventes.creer", "facturation.creer"]
     permission_ecriture = "tarifs_impression.gerer"
     pagination_class = None
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = super().get_queryset().annotate(
+            frequence=Count("lignes_vente", filter=Q(lignes_vente__vente__annulee=False), distinct=True)
+        )
         depot = self.request.query_params.get("depot")
         if depot:
             qs = qs.filter(depot_id=depot)
+        if self.request.query_params.get("ordre") == "frequence":
+            qs = qs.order_by("-frequence", "type_travail", "format_papier", "couleur")
         return qs
 
 
@@ -51,6 +57,9 @@ class CommandeImpressionViewSet(viewsets.ModelViewSet):
         depot = self.request.query_params.get("depot")
         if depot:
             qs = qs.filter(depot_id=depot)
+        if self.request.query_params.get("a_regler") == "1":
+            # Commandes non annulees et pas encore encaissees en caisse.
+            qs = qs.filter(ligne_vente__isnull=True).exclude(statut=StatutCommandeImpression.ANNULEE)
         return qs
 
     def create(self, request, *args, **kwargs):

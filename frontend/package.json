@@ -12,6 +12,9 @@
   "dependencies": {
     "autoprefixer": "^10.6.1",
     "axios": "^1.7.9",
+    "exceljs": "^4.4.0",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.54.0",
     "postcss": "^8.5.29",
     "react": "^19.2.8",

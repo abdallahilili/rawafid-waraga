@@ -14,19 +14,25 @@ class ClientSerializer(serializers.ModelSerializer):
 class ModePaiementSerializer(serializers.ModelSerializer):
     class Meta:
         model = ModePaiement
-        fields = ["id", "nom", "alias", "etat"]
+        fields = ["id", "nom", "alias", "etat", "especes"]
 
 
 class LigneSerializer(serializers.ModelSerializer):
-    article_nom = serializers.CharField(source="article.nom", read_only=True)
-    unite = serializers.CharField(source="article.unite", read_only=True)
+    article_nom = serializers.SerializerMethodField()
+    unite = serializers.SerializerMethodField()
 
     class Meta:
         model = LigneExpressionBesoins
         fields = [
-            "id", "article", "article_nom", "unite", "quantite_devis",
+            "id", "article", "tarif", "article_nom", "designation", "unite", "quantite_devis",
             "quantite_livre", "prix", "prix_total",
         ]
+
+    def get_article_nom(self, obj):
+        return obj.article.nom if obj.article_id else obj.designation
+
+    def get_unite(self, obj):
+        return obj.article.unite if obj.article_id else "page"
 
 
 class PaiementSerializer(serializers.ModelSerializer):
@@ -56,7 +62,8 @@ class ExpressionSerializer(serializers.ModelSerializer):
 
 
 class LigneEcritureSerializer(serializers.Serializer):
-    article = serializers.IntegerField()
+    article = serializers.IntegerField(required=False)
+    tarif = serializers.IntegerField(required=False)
     quantite = serializers.IntegerField(min_value=1)
     prix = serializers.DecimalField(max_digits=12, decimal_places=2, required=False, allow_null=True)
 

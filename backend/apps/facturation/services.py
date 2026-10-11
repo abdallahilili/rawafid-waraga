@@ -8,6 +8,7 @@ from apps.commun.constantes import TypeMouvementStock
 from apps.commun.exceptions import ErreurMetier
 from apps.commun.references import prochaine_reference
 from apps.stock import services as stock_services
+from apps.ventes.services import libelle_tarif
 from .models import (
     EtatExpression, ExpressionBesoins, LigneExpressionBesoins, PaiementFacture,
 )
@@ -24,13 +25,21 @@ def _ecrire_lignes(expression, lignes):
         quantite = ligne["quantite"]
         if quantite <= 0:
             raise ErreurMetier("La quantite doit etre positive.")
-        article = ligne["article"]
-        prix = Decimal(ligne["prix"]) if ligne.get("prix") is not None else article.prix_vente
+        article, tarif = ligne.get("article"), ligne.get("tarif")
+        if (article is None) == (tarif is None):
+            raise ErreurMetier("Chaque ligne doit porter un article ou un service.")
+        if article is not None:
+            prix_defaut, designation = article.prix_vente, article.nom
+        else:
+            if not tarif.actif:
+                raise ErreurMetier(f"Le tarif {libelle_tarif(tarif)} est desactive.")
+            prix_defaut, designation = tarif.prix_unitaire_page, libelle_tarif(tarif)
+        prix = Decimal(ligne["prix"]) if ligne.get("prix") is not None else prix_defaut
         if prix < 0:
             raise ErreurMetier("Le prix ne peut pas etre negatif.")
         montant = prix * quantite
         LigneExpressionBesoins.objects.create(
-            expression_besoins=expression, article=article,
+            expression_besoins=expression, article=article, tarif=tarif, designation=designation,
             quantite_devis=quantite, prix=prix, prix_total=montant,
         )
         total += montant
@@ -82,17 +91,18 @@ def valider_bon_livraison(expression, quantites_livrees=None, date_bc=None, util
     numero = prochaine_reference("BL")
     total = Decimal("0")
     for ligne in expression.lignes.select_related("article"):
+        nom = ligne.article.nom if ligne.article_id else ligne.designation
         livree = quantites_livrees.get(ligne.id, ligne.quantite_devis)
         if livree < 0 or livree > ligne.quantite_devis:
             raise ErreurMetier(
-                f"Quantite livree invalide pour {ligne.article.nom} "
+                f"Quantite livree invalide pour {nom} "
                 f"(devis : {ligne.quantite_devis})."
             )
         ligne.quantite_livre = livree
         ligne.prix_total = ligne.prix * livree
         ligne.save(update_fields=["quantite_livre", "prix_total"])
         total += ligne.prix_total
-        if livree > 0:
+        if livree > 0 and ligne.article_id:  # un service n'a pas de stock
             stock_services.enregistrer_sortie(
                 ligne.article, depot, livree, reference_document=numero,
                 commentaire=f"Bon de livraison {numero}", utilisateur=utilisateur,
@@ -156,5 +166,6 @@ def payer_facture(expression, montant, mode_paiement, personnel):
     caisse_services.enregistrer_encaissement(
         session, montant, reference_document=expression.numero_facture,
         commentaire=f"Paiement facture {expression.numero_facture}",
+        mode_paiement=mode_paiement, utilisateur=personnel,
     )
     return paiement

@@ -4,6 +4,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.articles.models import Article
+from apps.commun.exceptions import ErreurMetier
+from apps.impression.models import TarifImpression
 from apps.commun.permissions import PermissionParCode
 from apps.commun.vues_base import ViewSetGestion
 from . import services
@@ -39,8 +41,13 @@ class ModePaiementViewSet(ViewSetGestion):
 def _lignes_devis(donnees):
     lignes = []
     for ligne in donnees["lignes"]:
-        article = get_object_or_404(Article, pk=ligne["article"])
-        lignes.append({"article": article, "quantite": ligne["quantite"], "prix": ligne.get("prix")})
+        if bool(ligne.get("article")) == bool(ligne.get("tarif")):
+            raise ErreurMetier("Chaque ligne doit porter un article ou un service.")
+        lignes.append({
+            "article": get_object_or_404(Article, pk=ligne["article"]) if ligne.get("article") else None,
+            "tarif": get_object_or_404(TarifImpression, pk=ligne["tarif"]) if ligne.get("tarif") else None,
+            "quantite": ligne["quantite"], "prix": ligne.get("prix"),
+        })
     return lignes
 
 

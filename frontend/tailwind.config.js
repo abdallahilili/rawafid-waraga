@@ -8,13 +8,13 @@ export default {
     extend: {
       colors: {
         entete: {
-          DEFAULT: "#1464b4",
-          fonce: "#0f4f91",
+          DEFAULT: "rgb(var(--c-entete) / <alpha-value>)",
+          fonce: "rgb(var(--c-entete-fonce) / <alpha-value>)",
         },
         fond: {
-          DEFAULT: "#f4f5f7",
-          carte: "#ffffff",
-          barre: "#eef0f3",
+          DEFAULT: "rgb(var(--c-fond) / <alpha-value>)",
+          carte: "rgb(var(--c-carte) / <alpha-value>)",
+          barre: "rgb(var(--c-barre) / <alpha-value>)",
         },
         accent: {
           vert: "#3fae56",
@@ -23,13 +23,13 @@ export default {
           orange: "#f2994a",
         },
         texte: {
-          DEFAULT: "#2b2f36",
-          attenue: "#6b7280",
+          DEFAULT: "rgb(var(--c-texte) / <alpha-value>)",
+          attenue: "rgb(var(--c-texte-attenue) / <alpha-value>)",
         },
-        bordure: "#e2e5ea",
+        bordure: "rgb(var(--c-bordure) / <alpha-value>)",
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
+        sans: ["var(--police)"],
       },
       boxShadow: {
         carte: "0 1px 2px rgba(16, 24, 40, 0.06)",

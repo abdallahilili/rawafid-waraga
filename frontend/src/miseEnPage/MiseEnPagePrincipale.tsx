@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { MENU } from "./menu";
+import { useEntreprise } from "../hooks/useEntreprise";
 
 /** Mise en page principale inspiree de l'image de reference Acumatica :
  * barre superieure bleue pleine avec logo/recherche a gauche et
@@ -12,12 +13,14 @@ import { MENU } from "./menu";
 export function MiseEnPagePrincipale({ children }: { children: ReactNode }) {
   const { utilisateur, deconnecter, peut } = useAuth();
   const [reduit, setReduit] = useState(false);
+  const entreprise = useEntreprise();
 
   return (
     <div className="flex h-screen flex-col bg-fond">
       <header className="flex h-14 shrink-0 items-center justify-between bg-entete px-4 text-white">
         <div className="flex items-center gap-4">
-          <span className="text-lg font-bold tracking-tight">Papeterie&nbsp;&amp;&nbsp;Imprimerie</span>
+          {entreprise.logo && <img src={entreprise.logo} alt="" className="h-8 max-w-[7rem] rounded bg-white/90 object-contain p-0.5" />}
+          <span className="text-lg font-bold tracking-tight">{entreprise.nom}</span>
           <div className="hidden items-center gap-2 rounded bg-white/15 px-2.5 py-1.5 sm:flex">
             <Search size={14} />
             <input

@@ -16,7 +16,7 @@ class TestCircuitFacturation(CasDeBase):
         self.client_fiche = Client.objects.create(nom="Sow", prenom="Ali", num_client="C-001")
         self.article = Article.objects.create(nom="Ramette A4", reference="ART-F1", prix_achat=10, prix_vente=20)
         stock_services.enregistrer_entree(self.article, self.depot, 100, Decimal("10"))
-        self.mode, _ = ModePaiement.objects.get_or_create(nom="Especes")
+        self.mode, _ = ModePaiement.objects.update_or_create(nom="Especes", defaults={"especes": True})
 
     def _devis(self, quantite=10):
         return services.creer_devis(
@@ -106,3 +106,60 @@ class TestApiFacturation(CasDeBase):
         reponse = admin.post(f"/api/facturation/documents/{identifiant}/valider_facture/", {}, format="json")
         self.assertEqual(reponse.status_code, 200, reponse.data)
         self.assertEqual(reponse.data["montant_reste"], "30.00")
+
+
+class TestDevisAvecService(CasDeBase):
+    def setUp(self):
+        super().setUp()
+        from apps.impression.models import TarifImpression
+        self.client_fiche = Client.objects.create(nom="Ecole")
+        self.article = Article.objects.create(nom="Cahier", reference="ART-S1", prix_achat=5, prix_vente=10)
+        stock_services.enregistrer_entree(self.article, self.depot, 20, Decimal("5"))
+        self.tarif = TarifImpression.objects.create(
+            depot=self.depot, type_travail="PHOTOCOPIE", format_papier="A4",
+            couleur="NOIR_BLANC", prix_unitaire_page=Decimal("2"),
+        )
+
+    def test_devis_mixte_article_et_service_jusqu_a_la_facture(self):
+        devis = services.creer_devis(self.client_fiche, self.magasinier, [
+            {"article": self.article, "quantite": 4},
+            {"tarif": self.tarif, "quantite": 100},
+        ])
+        self.assertEqual(devis.prix_total, Decimal("240"))  # 4 x 10 + 100 x 2
+        bl = services.valider_bon_livraison(devis, utilisateur=self.magasinier)
+        # Seul l'article sort du stock ; le service n'a pas de stock.
+        self.assertEqual(Stock.objects.get(article=self.article, depot=self.depot).quantite, 16)
+        facture = services.valider_facture(bl)
+        self.assertEqual(facture.montant_reste, Decimal("240"))
+        noms = [l.designation for l in facture.lignes.all()]
+        self.assertIn("Photocopie A4 Noir et blanc", noms)
+
+    def test_ligne_sans_article_ni_service_refusee(self):
+        with self.assertRaises(ErreurMetier):
+            services.creer_devis(self.client_fiche, self.magasinier, [{"quantite": 1}])
+
+
+class TestFrequenceCaisse(CasDeBase):
+    def test_articles_et_services_tries_par_frequence(self):
+        from apps.caisse import services as caisse_services
+        from apps.impression.models import TarifImpression
+        from apps.ventes import services as vente_services
+        rare = Article.objects.create(nom="AAA rare", reference="R1", prix_achat=1, prix_vente=2)
+        frequent = Article.objects.create(nom="ZZZ frequent", reference="F1", prix_achat=1, prix_vente=2)
+        stock_services.enregistrer_entree(rare, self.depot, 50, Decimal("1"))
+        stock_services.enregistrer_entree(frequent, self.depot, 50, Decimal("1"))
+        session = caisse_services.ouvrir_session(self.depot, self.caissier)
+        for article in (frequent, frequent, rare):
+            vente_services.creer_vente(self.depot, session, [{"type": "ARTICLE", "article": article, "quantite": 1}], 10)
+
+        reponse = self.client_pour(self.caissier).get("/api/articles/recherche-caisse/")
+        noms = [a["nom"] for a in reponse.data]
+        self.assertEqual(noms[:2], ["ZZZ frequent", "AAA rare"])
+        self.assertEqual(reponse.data[0]["frequence"], 2)
+
+        t1 = TarifImpression.objects.create(depot=self.depot, type_travail="SCAN", format_papier="A4", couleur="NOIR_BLANC", prix_unitaire_page=1)
+        t2 = TarifImpression.objects.create(depot=self.depot, type_travail="RELIURE", format_papier="A4", couleur="NOIR_BLANC", prix_unitaire_page=3)
+        vente_services.creer_vente(self.depot, session, [{"type": "SERVICE", "tarif": t2, "quantite": 5}], 100)
+        reponse = self.client_pour(self.caissier).get("/api/impression/tarifs/?ordre=frequence")
+        self.assertEqual(reponse.data[0]["libelle"], "Reliure A4 Noir et blanc")
+        self.assertEqual(reponse.data[0]["frequence"], 1)

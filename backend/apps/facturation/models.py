@@ -36,6 +36,8 @@ class ModePaiement(models.Model):
     nom = models.CharField(max_length=60, unique=True, db_column="nom")
     etat = models.BooleanField(default=True, db_column="etat")
     alias = models.CharField(max_length=30, blank=True, default="", db_column="alias")
+    # Les paiements en especes comptent dans le tiroir-caisse (montant attendu a la cloture).
+    especes = models.BooleanField(default=False, db_column="especes")
 
     class Meta:
         db_table = "modepaiement"
@@ -88,9 +90,17 @@ class LigneExpressionBesoins(models.Model):
     expression_besoins = models.ForeignKey(
         ExpressionBesoins, on_delete=models.CASCADE, db_column="idExpression", related_name="lignes",
     )
+    # Une ligne porte soit un article (sortie de stock a la livraison), soit un
+    # service d'impression au comptoir (tarif ; quantite = nombre de pages, sans stock).
     article = models.ForeignKey(
-        "articles.Article", on_delete=models.PROTECT, db_column="idMedicament", related_name="+",
+        "articles.Article", null=True, blank=True, on_delete=models.PROTECT,
+        db_column="idMedicament", related_name="+",
     )
+    tarif = models.ForeignKey(
+        "impression.TarifImpression", null=True, blank=True, on_delete=models.PROTECT,
+        db_column="idTarif", related_name="+",
+    )
+    designation = models.CharField(max_length=150, blank=True, default="", db_column="designation")
     quantite_devis = models.PositiveIntegerField(db_column="quantiteDevis")
     quantite_livre = models.PositiveIntegerField(default=0, db_column="quantiteLivre")
     prix = models.DecimalField(max_digits=12, decimal_places=2, db_column="prix")

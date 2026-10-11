@@ -1,7 +1,7 @@
 from rest_framework import filters
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.db.models import Sum, F
+from django.db.models import Count, Q, Sum, F
 
 from apps.commun.permissions import PermissionParCode
 from apps.commun.vues_base import ViewSetGestion
@@ -24,7 +24,7 @@ class ArticleViewSet(ViewSetGestion):
     serializer_class = ArticleSerializer
     permission_lecture = [
         "articles.voir", "caisse.voir", "ventes.creer", "achats.creer",
-        "stock.voir",
+        "stock.voir", "facturation.creer",
     ]
     permissions_par_action = {
         "create": "articles.gerer",
@@ -60,7 +60,10 @@ class RechercheCaisseArticleView(APIView):
         if terme:
             qs = qs.filter(nom__icontains=terme) | qs.filter(reference__icontains=terme) \
                  | qs.filter(code_barre__icontains=terme)
-        qs = qs.select_related("categorie")[:20]
+        # Frequence = nombre de ventes (non annulees) ou l'article figure ; les plus vendus d'abord.
+        qs = qs.select_related("categorie").annotate(
+            frequence=Count("lignes_vente", filter=Q(lignes_vente__vente__annulee=False), distinct=True)
+        ).order_by("-frequence", "nom")[:100]
 
         from apps.stock.models import Stock
         resultats = []
@@ -77,5 +80,6 @@ class RechercheCaisseArticleView(APIView):
                 "prix_vente": str(article.prix_vente),
                 "categorie_nom": article.categorie.nom if article.categorie else None,
                 "quantite_disponible": quantite,
+                "frequence": article.frequence,
             })
         return Response(resultats)

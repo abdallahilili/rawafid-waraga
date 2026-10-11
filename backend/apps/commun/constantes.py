@@ -12,6 +12,11 @@ CATALOGUE_PERMISSIONS = {
         ("caisse.voir", "Acceder a l'ecran de caisse"),
         ("caisse.ouvrir_fermer", "Ouvrir et fermer une session de caisse"),
         ("caisse.voir_toutes_sessions", "Voir les sessions de tous les caissiers"),
+        ("caisse.mouvements_manuels", "Faire des entrees / sorties manuelles d'especes en caisse"),
+        ("caisse.fermer_sessions_autres", "Cloturer les sessions de caisse des autres utilisateurs"),
+    ]),
+    "journal_caisse": ("Journal de caisse", [
+        ("journal_caisse.voir", "Consulter le journal de session (historique, mouvements, ecarts)"),
     ]),
     "ventes": ("Ventes et recettes", [
         ("ventes.voir", "Voir l'historique des ventes"),
@@ -81,7 +86,8 @@ CATALOGUE_PERMISSIONS = {
         ("rapports.etat_impression", "Etat des travaux d'impression"),
     ]),
     "administration": ("Administration", [
-        ("administration.parametres", "Modifier les parametres"),
+        ("administration.voir", "Acceder a la page Parametres"),
+        ("administration.parametres", "Modifier les parametres, caisses et modes de paiement"),
         ("administration.journal", "Consulter le journal d'audit"),
     ]),
 }
@@ -92,9 +98,9 @@ TOUTES_LES_PERMISSIONS = [
 
 # Modules affiches dans le menu : visibles si "<module>.voir" est accorde.
 MODULES_MENU = [
-    "tableau_de_bord", "caisse", "ventes", "impression", "tarifs_impression",
+    "tableau_de_bord", "caisse", "journal_caisse", "ventes", "impression", "tarifs_impression",
     "clients", "facturation", "articles", "stock", "fournisseurs", "achats", "depots",
-    "utilisateurs", "groupes", "rapports",
+    "utilisateurs", "groupes", "rapports", "administration",
 ]
 
 # Groupes crees par defaut (initialiser_donnees / migration).
@@ -235,6 +241,7 @@ class TypeMouvementCaisse:
     OUVERTURE = "OUVERTURE"
     FERMETURE = "FERMETURE"
     SORTIE_CAISSE = "SORTIE_CAISSE"
+    ENTREE_CAISSE = "ENTREE_CAISSE"
 
     CHOIX = [
         (ENCAISSEMENT, "Encaissement"),
@@ -242,4 +249,25 @@ class TypeMouvementCaisse:
         (OUVERTURE, "Ouverture"),
         (FERMETURE, "Fermeture"),
         (SORTIE_CAISSE, "Sortie de caisse"),
+        (ENTREE_CAISSE, "Entree de caisse"),
     ]
+
+
+# Parametres de l'application : {cle: (valeur par defaut, description)}.
+# Seules ces cles sont modifiables depuis la page Parametres.
+PARAMETRES_PAR_DEFAUT = {
+    "NOM_ENTREPRISE": ("Papeterie & Imprimerie", "Nom de l'entreprise"),
+    "LOGO_ENTREPRISE": ("", "Logo (image encodee en data URL)"),
+    "TELEPHONE_ENTREPRISE": ("", "Telephone 1"),
+    "TELEPHONE_ENTREPRISE_2": ("", "Telephone 2 (optionnel)"),
+    "ADRESSE_ENTREPRISE": ("", "Adresse de l'entreprise"),
+    "EMAIL_ENTREPRISE": ("", "Email de l'entreprise"),
+    "NIF_ENTREPRISE": ("", "NIF / registre de commerce"),
+    "DEVISE": ("MRU", "Devise affichee sur les montants imprimes"),
+    "MESSAGE_RECU": ("Merci de votre confiance !", "Message en bas des recus"),
+    "MESSAGE_DEVIS": ("Devis valable 30 jours - Bon pour accord (signature du client)", "Message en bas des devis"),
+    "MESSAGE_BL": ("Merci de verifier la conformite des quantites a la reception.", "Message en bas des bons de livraison"),
+    "MESSAGE_FACTURE": ("", "Message en bas des factures (vide = message du recu)"),
+    "AFFICHER_LOGO_DOCUMENTS": ("1", "1 pour afficher le logo sur les documents imprimes"),
+    "AUTORISER_STOCK_NEGATIF": ("0", "1 pour autoriser un stock negatif"),
+}

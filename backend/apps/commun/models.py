@@ -6,7 +6,7 @@ class Parametre(models.Model):
     """Parametre de configuration metier cle/valeur (ex: TVA, devise)."""
 
     cle = models.CharField(max_length=100, unique=True, db_column="cle")
-    valeur = models.CharField(max_length=255, db_column="valeur")
+    valeur = models.TextField(blank=True, default="", db_column="valeur")
     description = models.CharField(
         max_length=255, blank=True, default="", db_column="description"
     )

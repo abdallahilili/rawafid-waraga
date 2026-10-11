@@ -1,9 +1,10 @@
+import { useEntreprise } from "../../hooks/useEntreprise";
 import { useState } from "react";
 import { Plus, Check, X } from "lucide-react";
 import { useListe, useOptions } from "../../hooks/useListe";
 import { TableauDonnees } from "../../composants/TableauDonnees";
 import { Modale } from "../../composants/Modale";
-import { Badge } from "../../composants/Badge";
+import { Badge, libelleStatut } from "../../composants/Badge";
 import { useNotifications } from "../../composants/Notifications";
 import { useConfirmation } from "../../composants/Confirmation";
 import { api, messageErreur } from "../../services/api";
@@ -12,6 +13,7 @@ import type { Achat, Fournisseur, Depot, Article } from "../../types";
 interface LigneForm { article: string; quantite: string; prix_unitaire: string }
 
 export function PageAchats() {
+  const { devise } = useEntreprise();
   const { resultats, chargement, page, setPage, nombrePages, recharger } = useListe<Achat>("/achats/");
   const fournisseurs = useOptions<Fournisseur>("/fournisseurs/");
   const depots = useOptions<Depot>("/depots/");
@@ -98,12 +100,13 @@ export function PageAchats() {
       </div>
 
       <TableauDonnees<Achat>
+        titre="Achats"
         colonnes={[
           { cle: "reference", titre: "Reference" },
           { cle: "fournisseur_nom", titre: "Fournisseur" },
           { cle: "depot_nom", titre: "Depot" },
-          { cle: "montant_total", titre: "Montant", alignerDroite: true, rendu: (a) => `${a.montant_total} MRU` },
-          { cle: "statut", titre: "Statut", rendu: (a) => <Badge statut={a.statut} /> },
+          { cle: "montant_total", titre: "Montant", alignerDroite: true, rendu: (a) => `${a.montant_total} ${devise}` },
+          { cle: "statut", titre: "Statut", rendu: (a) => <Badge statut={a.statut} />, exportRendu: (a) => libelleStatut(a.statut) },
         ]}
         lignes={resultats}
         chargement={chargement}

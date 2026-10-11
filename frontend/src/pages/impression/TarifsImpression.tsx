@@ -1,3 +1,4 @@
+import { useEntreprise } from "../../hooks/useEntreprise";
 import { PageCrud } from "../../composants/PageCrud";
 import type { TarifImpression } from "../../types";
 
@@ -18,6 +19,7 @@ const CHOIX_COULEUR = [
 ];
 
 export function PageTarifsImpression() {
+  const { devise } = useEntreprise();
   return (
     <PageCrud<TarifImpression>
       titre="Tarifs d'impression"
@@ -29,7 +31,7 @@ export function PageTarifsImpression() {
         { cle: "type_travail", titre: "Type de travail" },
         { cle: "format_papier", titre: "Format" },
         { cle: "couleur", titre: "Couleur" },
-        { cle: "prix_unitaire_page", titre: "Prix / page", alignerDroite: true, rendu: (t) => `${t.prix_unitaire_page} MRU` },
+        { cle: "prix_unitaire_page", titre: "Prix / page", alignerDroite: true, rendu: (t) => `${t.prix_unitaire_page} ${devise}` },
       ]}
       champs={[
         { nom: "depot", label: "Depot", type: "select", optionsUrl: "/depots/", requis: true },

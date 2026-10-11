@@ -1,3 +1,4 @@
+import { useEntreprise } from "../../hooks/useEntreprise";
 import { useState } from "react";
 import { useListe, useOptions } from "../../hooks/useListe";
 import { TableauDonnees } from "../../composants/TableauDonnees";
@@ -10,6 +11,7 @@ import { Plus, Minus, ArrowLeftRight, ClipboardList } from "lucide-react";
 type Onglet = "ENTREE" | "SORTIE" | "TRANSFERT" | "INVENTAIRE";
 
 export function PageStock() {
+  const { devise } = useEntreprise();
   const depots = useOptions<Depot>("/depots/");
   const articles = useOptions<Article>("/articles/");
   const [depotFiltre, setDepotFiltre] = useState("");
@@ -72,6 +74,7 @@ export function PageStock() {
       </div>
 
       <TableauDonnees<Stock>
+        titre="Stock"
         colonnes={[
           { cle: "article_nom", titre: "Article" },
           { cle: "depot_nom", titre: "Depot" },
@@ -80,9 +83,10 @@ export function PageStock() {
             rendu: (s) => (
               <span className={s.quantite <= s.seuil_alerte ? "font-semibold text-accent-rouge" : ""}>{s.quantite}</span>
             ),
+            exportRendu: (s) => s.quantite,
           },
-          { cle: "cout_moyen_pondere", titre: "CUMP", alignerDroite: true, rendu: (s) => s.cout_moyen_pondere ? `${s.cout_moyen_pondere} MRU` : "-" },
-          { cle: "valeur_stock", titre: "Valeur", alignerDroite: true, rendu: (s) => s.valeur_stock ? `${s.valeur_stock} MRU` : "-" },
+          { cle: "cout_moyen_pondere", titre: "CUMP", alignerDroite: true, rendu: (s) => s.cout_moyen_pondere ? `${s.cout_moyen_pondere} ${devise}` : "-" },
+          { cle: "valeur_stock", titre: "Valeur", alignerDroite: true, rendu: (s) => s.valeur_stock ? `${s.valeur_stock} ${devise}` : "-" },
         ]}
         lignes={resultats}
         chargement={chargement}

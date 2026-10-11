@@ -4,13 +4,18 @@ from .models import TarifImpression, CommandeImpression, LigneCommandeImpression
 
 class TarifImpressionSerializer(serializers.ModelSerializer):
     depot_nom = serializers.CharField(source="depot.nom", read_only=True)
+    libelle = serializers.SerializerMethodField()
+    frequence = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = TarifImpression
         fields = [
             "id", "depot", "depot_nom", "type_travail", "format_papier", "couleur",
-            "prix_unitaire_page", "actif",
+            "prix_unitaire_page", "actif", "libelle", "frequence",
         ]
+
+    def get_libelle(self, obj):
+        return f"{obj.get_type_travail_display()} {obj.get_format_papier_display()} {obj.get_couleur_display()}"
 
 
 class LigneCommandeImpressionSerializer(serializers.ModelSerializer):

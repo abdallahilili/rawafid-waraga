@@ -9,6 +9,9 @@ const COULEURS: Record<string, string> = {
   LIVREE: "bg-green-50 text-accent-vert",
   OUVERTE: "bg-green-50 text-accent-vert",
   FERMEE: "bg-gray-100 text-gray-700",
+  DEVIS: "bg-amber-50 text-amber-700",
+  BON_LIVRAISON: "bg-blue-50 text-accent-bleu",
+  FACTURE: "bg-green-50 text-accent-vert",
 };
 
 const LIBELLES: Record<string, string> = {
@@ -22,7 +25,12 @@ const LIBELLES: Record<string, string> = {
   LIVREE: "Livree",
   OUVERTE: "Ouverte",
   FERMEE: "Fermee",
+  DEVIS: "Devis",
+  BON_LIVRAISON: "Bon de livraison",
+  FACTURE: "Facture",
 };
+
+export const libelleStatut = (statut: string) => LIBELLES[statut] ?? statut;
 
 export function Badge({ statut }: { statut: string }) {
   return (

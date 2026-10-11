@@ -1,3 +1,4 @@
+import { useEntreprise } from "../../hooks/useEntreprise";
 import { useEffect, useState } from "react";
 import { api, messageErreur } from "../../services/api";
 import { Modale } from "../../composants/Modale";
@@ -13,6 +14,7 @@ interface Props {
 
 /** Validation du devis en bon de livraison : date et quantites reellement livrees. */
 export function ModaleBL({ ouverte, devis, onFermer, onValide }: Props) {
+  const { devise } = useEntreprise();
   const { notifierSucces, notifierErreur } = useNotifications();
   const [dateBL, setDateBL] = useState("");
   const [livrees, setLivrees] = useState<Record<number, string>>({});
@@ -77,7 +79,7 @@ export function ModaleBL({ ouverte, devis, onFermer, onValide }: Props) {
             ))}
           </tbody>
         </table>
-        <p className="text-right text-sm font-semibold">Total livre : {total.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} MRU</p>
+        <p className="text-right text-sm font-semibold">Total livre : {total.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} {devise}</p>
         <div className="flex justify-end gap-2">
           <button type="button" onClick={onFermer} className="rounded border border-bordure px-3 py-1.5 text-sm hover:bg-fond">Annuler</button>
           <button type="submit" disabled={envoi} className="rounded bg-entete px-3 py-1.5 text-sm font-medium text-white hover:bg-entete-fonce disabled:opacity-50">Valider le bon de livraison</button>

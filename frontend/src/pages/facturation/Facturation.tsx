@@ -1,3 +1,4 @@
+import { useEntreprise } from "../../hooks/useEntreprise";
 import { useState } from "react";
 import { Plus, Pencil, Printer, Truck, FileText, Banknote, Search } from "lucide-react";
 import { api, messageErreur } from "../../services/api";
@@ -7,8 +8,8 @@ import { useNotifications } from "../../composants/Notifications";
 import { useConfirmation } from "../../composants/Confirmation";
 import { TableauDonnees } from "../../composants/TableauDonnees";
 import { Badge } from "../../composants/Badge";
-import { imprimerDocument } from "../../services/documents";
-import type { TypeDocument } from "../../services/documents";
+import { ImpressionFacturation } from "./ImpressionFacturation";
+import type { TypeDocument } from "./ImpressionFacturation";
 import type { ExpressionBesoins } from "../../types";
 import { ModaleDevis } from "./ModaleDevis";
 import { ModaleBL } from "./ModaleBL";
@@ -33,6 +34,7 @@ function dateCourante(d: ExpressionBesoins) {
 const BOUTON = "flex items-center gap-1 rounded border border-bordure px-2 py-0.5 text-xs hover:bg-fond";
 
 export function PageFacturation() {
+  const { devise } = useEntreprise();
   const { autorise } = useAuth();
   const { notifierSucces, notifierErreur } = useNotifications();
   const { demanderConfirmation } = useConfirmation();
@@ -47,18 +49,13 @@ export function PageFacturation() {
   const [blCible, setBlCible] = useState<ExpressionBesoins | null>(null);
   const [paiementCible, setPaiementCible] = useState<ExpressionBesoins | null>(null);
 
-  async function imprimer(type: TypeDocument, doc: ExpressionBesoins) {
-    try {
-      await imprimerDocument(type, doc);
-    } catch (err) {
-      notifierErreur(messageErreur(err));
-    }
-  }
+  const [impression, setImpression] = useState<{ type: TypeDocument; doc: ExpressionBesoins } | null>(null);
+  const imprimer = (type: TypeDocument, doc: ExpressionBesoins) => setImpression({ type, doc });
 
   async function facturer(doc: ExpressionBesoins) {
     const ok = await demanderConfirmation({
       titre: "Transformer en facture",
-      message: `Creer la facture du bon de livraison ${doc.numero_bl} (${doc.prix_total} MRU) ?`,
+      message: `Creer la facture du bon de livraison ${doc.numero_bl} (${doc.prix_total} ${devise}) ?`,
     });
     if (!ok) return;
     try {
@@ -95,16 +92,18 @@ export function PageFacturation() {
       </div>
 
       <TableauDonnees<ExpressionBesoins>
+        titre="Devis, bons de livraison et factures"
         colonnes={[
           { cle: "reference", titre: "Numero", rendu: numeroCourant },
           { cle: "client_nom", titre: "Client" },
           { cle: "date_devis", titre: "Date", rendu: dateCourante },
-          { cle: "prix_total", titre: "Montant", alignerDroite: true, rendu: (d) => `${d.prix_total} MRU` },
-          { cle: "montant_reste", titre: "Reste a payer", alignerDroite: true, rendu: (d) => (d.etat === 2 ? `${d.montant_reste} MRU` : "-") },
-          { cle: "etat", titre: "Etape", rendu: (d) => <Badge statut={CLE_ETAT[d.etat]} /> },
+          { cle: "prix_total", titre: "Montant", alignerDroite: true, rendu: (d) => `${d.prix_total} ${devise}` },
+          { cle: "montant_reste", titre: "Reste a payer", alignerDroite: true, rendu: (d) => (d.etat === 2 ? `${d.montant_reste} ${devise}` : "-") },
+          { cle: "etat", titre: "Etape", rendu: (d) => <Badge statut={CLE_ETAT[d.etat]} />, exportRendu: (d) => d.etat_libelle },
           {
             cle: "etat_paiement", titre: "Paiement",
             rendu: (d) => d.etat < 2 ? "-" : <span className={d.etat_paiement ? "text-accent-vert" : "text-accent-rouge"}>{d.etat_paiement ? "Paye" : "Non paye"}</span>,
+            exportRendu: (d) => (d.etat < 2 ? "-" : d.etat_paiement ? "Paye" : "Non paye"),
           },
         ]}
         lignes={resultats}
@@ -134,6 +133,7 @@ export function PageFacturation() {
         )}
       />
 
+      <ImpressionFacturation document={impression?.doc ?? null} type={impression?.type ?? "DEVIS"} onFermer={() => setImpression(null)} />
       <ModaleDevis
         ouverte={devisOuvert} devis={devisEdite}
         onFermer={() => setDevisOuvert(false)}

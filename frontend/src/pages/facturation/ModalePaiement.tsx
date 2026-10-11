@@ -1,3 +1,4 @@
+import { useEntreprise } from "../../hooks/useEntreprise";
 import { useEffect, useState } from "react";
 import { api, messageErreur } from "../../services/api";
 import { useOptions } from "../../hooks/useListe";
@@ -14,6 +15,7 @@ interface Props {
 
 /** Paiement (total ou partiel) d'une facture ; necessite une session de caisse ouverte. */
 export function ModalePaiement({ ouverte, facture, onFermer, onPaye }: Props) {
+  const { devise } = useEntreprise();
   const modes = useOptions<ModePaiement>("/facturation/modes-paiement/", ouverte);
   const { notifierSucces, notifierErreur } = useNotifications();
   const [mode, setMode] = useState("");
@@ -49,8 +51,8 @@ export function ModalePaiement({ ouverte, facture, onFermer, onPaye }: Props) {
       <form onSubmit={soumettre} className="space-y-3">
         <div className="rounded border border-bordure bg-fond p-3 text-sm">
           <div>Client : <strong>{facture.client_nom}</strong></div>
-          <div>Total : {facture.prix_total} MRU</div>
-          <div>Reste a payer : <strong className="text-accent-rouge">{facture.montant_reste} MRU</strong></div>
+          <div>Total : {facture.prix_total} {devise}</div>
+          <div>Reste a payer : <strong className="text-accent-rouge">{facture.montant_reste} {devise}</strong></div>
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium">Mode de paiement <span className="text-accent-rouge">*</span></label>

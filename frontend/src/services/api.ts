@@ -1,7 +1,10 @@
 import axios from "axios";
 import type { AxiosError, InternalAxiosRequestConfig } from "axios";
 
-const URL_BASE = (import.meta.env.VITE_URL_API as string) || "http://localhost:8000/api";
+// Par defaut, l'API est sur le meme hote que la page, port 8000 : ainsi l'application
+// fonctionne depuis localhost comme depuis un autre poste du reseau (http://192.168.x.x:5173).
+const URL_BASE = (import.meta.env.VITE_URL_API as string)
+  || `${window.location.protocol}//${window.location.hostname}:8000/api`;
 
 let jetonAcces: string | null = null;
 
@@ -69,7 +72,9 @@ export function messageErreur(erreur: unknown): string {
     if (data && typeof data === "object") {
       const premiereCle = Object.keys(data)[0];
       const valeur = data[premiereCle];
-      return Array.isArray(valeur) ? `${premiereCle}: ${valeur[0]}` : String(valeur);
+      const texte = Array.isArray(valeur) ? String(valeur[0]) : String(valeur);
+      // Erreurs globales (ex. combinaison deja existante) : pas de nom de champ technique.
+      return premiereCle === "non_field_errors" ? texte : `${premiereCle}: ${texte}`;
     }
   }
   return "Une erreur inattendue s'est produite.";

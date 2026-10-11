@@ -1,8 +1,10 @@
+import { useEntreprise } from "../../hooks/useEntreprise";
 import { PageCrud } from "../../composants/PageCrud";
 import { useAuth } from "../../hooks/useAuth";
 import type { Article } from "../../types";
 
 export function PageArticles() {
+  const { devise } = useEntreprise();
   const { autorise } = useAuth();
 
   return (
@@ -19,7 +21,7 @@ export function PageArticles() {
         { cle: "reference", titre: "Reference" },
         { cle: "categorie_nom", titre: "Categorie" },
         { cle: "unite", titre: "Unite" },
-        { cle: "prix_vente", titre: "Prix vente", alignerDroite: true, rendu: (a) => `${a.prix_vente} MRU` },
+        { cle: "prix_vente", titre: "Prix vente", alignerDroite: true, rendu: (a) => `${a.prix_vente} ${devise}` },
         { cle: "stock_total", titre: "Stock", alignerDroite: true },
         {
           cle: "actif", titre: "Statut",

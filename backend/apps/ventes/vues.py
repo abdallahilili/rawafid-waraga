@@ -5,7 +5,8 @@ from apps.commun.permissions import PermissionParCode
 from apps.commun.exceptions import ErreurMetier
 from apps.depots.models import Depot
 from apps.articles.models import Article
-from apps.impression.models import CommandeImpression
+from django.shortcuts import get_object_or_404
+from apps.impression.models import CommandeImpression, TarifImpression
 from apps.caisse import services as caisse_services
 from .models import Vente, TypeLigneVente
 from .serializers import VenteSerializer, CreerVenteSerializer
@@ -56,6 +57,12 @@ class VenteViewSet(viewsets.ModelViewSet):
                     "article": Article.objects.get(pk=ligne["article"]),
                     "quantite": ligne["quantite"],
                 })
+            elif ligne["type"] == TypeLigneVente.SERVICE:
+                lignes.append({
+                    "type": TypeLigneVente.SERVICE,
+                    "tarif": get_object_or_404(TarifImpression, pk=ligne["tarif"]),
+                    "quantite": ligne["quantite"],
+                })
             else:
                 lignes.append({
                     "type": TypeLigneVente.IMPRESSION,
@@ -63,7 +70,8 @@ class VenteViewSet(viewsets.ModelViewSet):
                 })
 
         vente = services.creer_vente(
-            depot, session, lignes, donnees["montant_recu"],
+            depot, session, lignes, donnees.get("montant_recu"),
             nom_client=donnees.get("nom_client", ""), utilisateur=request.user,
+            paiements=donnees.get("paiements"),
         )
         return Response(VenteSerializer(vente).data, status=201)

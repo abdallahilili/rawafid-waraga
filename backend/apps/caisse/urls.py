@@ -1,8 +1,9 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
-from .vues import SessionCaissierViewSet, SessionActuelleView, OuvrirSessionView, FermerSessionView
+from .vues import CaisseViewSet, SessionCaissierViewSet, SessionActuelleView, OuvrirSessionView, FermerSessionView
 
 routeur = DefaultRouter()
+routeur.register("caisses", CaisseViewSet, basename="caisse")
 routeur.register("sessions", SessionCaissierViewSet, basename="session-caissier")
 
 urlpatterns = [

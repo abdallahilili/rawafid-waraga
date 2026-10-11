@@ -22,7 +22,8 @@ export function useListe<T>(url: string, parametres: Record<string, any> = {}, o
     setErreur(null);
     try {
       const reponse = await api.get(url, { params: { page, ...parametresRef.current } });
-      if (options.pagine === false) {
+      if (options.pagine === false || Array.isArray(reponse.data)) {
+        // Certaines listes (depots, tarifs...) ne sont pas paginees cote API.
         setResultats(reponse.data);
         setTotal(reponse.data.length);
         setNombrePages(1);

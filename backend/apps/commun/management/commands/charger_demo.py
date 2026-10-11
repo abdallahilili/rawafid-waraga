@@ -8,6 +8,7 @@ from apps.utilisateurs.groupes import creer_groupes_par_defaut, attribuer
 from apps.commun.constantes import GROUPES_PAR_DEFAUT, TypeTravailImpression, FormatPapier, CouleurImpression
 from apps.articles.models import Article, Categorie
 from apps.fournisseurs.models import Fournisseur
+from apps.facturation.models import Client
 from apps.impression.models import TarifImpression
 from apps.achats import services as achat_services
 from apps.stock.models import Stock
@@ -57,6 +58,9 @@ class Command(BaseCommand):
                 identifiant="magasinier1", mot_de_passe="magasinier123",
                 nom="Diallo", prenom="Amadou", groupe=Groupe.objects.get(nom="Magasinier"), depot=depot,
             )
+
+        for nom, prenom, numero in [("Ecole Primaire Centrale", "", "CLI-001"), ("Sow", "Ibrahima", "CLI-002")]:
+            Client.objects.get_or_create(num_client=numero, defaults={"nom": nom, "prenom": prenom})
 
         categorie_papier, _ = Categorie.objects.get_or_create(nom="Papier")
         categorie_ecriture, _ = Categorie.objects.get_or_create(nom="Ecriture")

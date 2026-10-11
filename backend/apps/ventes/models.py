@@ -5,7 +5,12 @@ from apps.commun.modeles import ModeleImmuable
 class TypeLigneVente:
     ARTICLE = "ARTICLE"
     IMPRESSION = "IMPRESSION"
-    CHOIX = [(ARTICLE, "Article"), (IMPRESSION, "Travail d'impression")]
+    SERVICE = "SERVICE"
+    CHOIX = [
+        (ARTICLE, "Article"),
+        (IMPRESSION, "Commande d'impression"),
+        (SERVICE, "Service (travail au comptoir)"),
+    ]
 
 
 class Vente(ModeleImmuable):
@@ -40,6 +45,24 @@ class Vente(ModeleImmuable):
         return self.reference
 
 
+class PaiementVente(models.Model):
+    """Une vente peut etre reglee par plusieurs modes de paiement ; la somme des
+    paiements est egale au total de la vente."""
+
+    vente = models.ForeignKey(Vente, on_delete=models.CASCADE, db_column="id_vente", related_name="paiements")
+    mode_paiement = models.ForeignKey(
+        "facturation.ModePaiement", on_delete=models.PROTECT, db_column="id_mode_paiement", related_name="+",
+    )
+    montant = models.DecimalField(max_digits=12, decimal_places=2, db_column="montant")
+    reference_transaction = models.CharField(max_length=60, blank=True, default="", db_column="reference_transaction")
+
+    class Meta:
+        db_table = "paiement_vente"
+        ordering = ["id"]
+        verbose_name = "Paiement de vente"
+        verbose_name_plural = "Paiements de vente"
+
+
 class LigneVente(models.Model):
     """Les lignes elles-memes ne sont pas immuables individuellement
     (elles sont creees une seule fois avec la vente, jamais modifiees
@@ -56,6 +79,12 @@ class LigneVente(models.Model):
         "impression.CommandeImpression", null=True, blank=True, on_delete=models.PROTECT,
         db_column="id_commande_impression", related_name="ligne_vente",
     )
+    tarif = models.ForeignKey(
+        "impression.TarifImpression", null=True, blank=True, on_delete=models.PROTECT,
+        db_column="id_tarif", related_name="lignes_vente",
+    )
+    # Libelle fige pour les services (ex. "Photocopie A4 Noir et blanc") ; quantite = nombre de pages.
+    designation = models.CharField(max_length=150, blank=True, default="", db_column="designation")
     prix_unitaire = models.DecimalField(max_digits=12, decimal_places=2, db_column="prix_unitaire")
     montant = models.DecimalField(max_digits=12, decimal_places=2, db_column="montant")
 
